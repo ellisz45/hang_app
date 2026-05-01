@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ff5c35">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="hang.">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<title>hang.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --orange: #ff5c35;
+  --orange-dim: rgba(255,92,53,0.15);
+  --bg: #0d0d0d;
+  --surface: #181818;
+  --surface2: #222222;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --text: #f0ede6;
+  --muted: #666;
+  --muted2: #444;
+  --green: #4ade80;
+  --green-dim: rgba(74,222,128,0.12);
+}
+
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; }
+
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  overflow-x: hidden;
+}
+
+/* ──────────── GRAIN OVERLAY ──────────── */
+body::before {
+  content: '';
+  position: fixed; inset: 0; pointer-events: none; z-index: 999;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ──────────── SCREENS ──────────── */
+.screen { display: none; flex-direction: column; width: 100%; max-width: 430px; min-height: 100vh; }
+.screen.active { display: flex; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.screen.active > * { animation: fadeUp 0.4s ease both; }
+.screen.active > *:nth-child(1) { animation-delay: 0.0s; }
+.screen.active > *:nth-child(2) { animation-delay: 0.07s; }
+.screen.active > *:nth-child(3) { animation-delay: 0.14s; }
+.screen.active > *:nth-child(4) { animation-delay: 0.21s; }
+.screen.active > *:nth-child(5) { animation-delay: 0.28s; }
+
+/* ──────────── SETUP SCREEN ──────────── */
+#screen-setup { padding: 56px 28px 40px; gap: 0; }
+
+.wordmark {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 48px;
+  letter-spacing: -2px;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.wordmark em { color: var(--orange); font-style: normal; }
+
+.tagline { font-size: 14px; color: var(--muted); margin-bottom: 52px; letter-spacing: 0.02em; }
+
+.field-group { margin-bottom: 22px; }
+.field-label {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  display: block;
+  margin-bottom: 8px;
+}
+
+input[type="text"] {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 16px;
+  padding: 15px 18px;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+  -webkit-appearance: none;
+}
+input[type="text"]:focus { border-color: var(--orange); background: #1e1e1e; }
+input[type="text"]::placeholder { color: var(--muted2); }
+
+.friends-row { display: flex; gap: 8px; }
+.friends-row input { flex: 1; }
+
+.btn-icon {
+  width: 52px; height: 52px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  color: var(--text);
+  font-size: 22px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color 0.2s, background 0.2s;
+  display: flex; align-items: center; justify-content: center;
+}
+.btn-icon:hover { border-color: var(--border2); background: var(--surface2); }
+
+.chips-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; min-height: 0; }
+.chip {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 99px; padding: 7px 14px;
+  font-size: 13px;
+  animation: fadeUp 0.2s ease;
+}
+.chip button {
+  background: none; border: none; color: var(--muted); cursor: pointer;
+  font-size: 16px; line-height: 1; padding: 0; margin-left: 2px;
+  transition: color 0.15s;
+}
+.chip button:hover { color: var(--orange); }
+
+.spacer { flex: 1; }
+
+.btn-primary {
+  background: var(--orange);
+  border: none; border-radius: 16px;
+  color: #fff;
+  font-family: 'Syne', sans-serif; font-weight: 700; font-size: 17px;
+  letter-spacing: 0.01em;
+  padding: 19px 24px; width: 100%; cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+  margin-top: 32px;
+  -webkit-appearance: none;
+}
+.btn-primary:hover { opacity: 0.9; }
+.btn-primary:active { transform: scale(0.98); opacity: 0.85; }
+.btn-primary:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* ──────────── MAIN SCREEN ──────────── */
+#screen-main { padding: 0; }
+
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 56px 28px 0;
+}
+
+.topbar-left .greeting {
+  font-family: 'Syne', sans-serif; font-weight: 700; font-size: 22px;
+}
+.topbar-left .group-name { font-size: 13px; color: var(--muted); margin-top: 3px; }
+
+.status-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 12px; border-radius: 99px;
+  font-size: 12px; font-weight: 500;
+}
+.status-pill.online {
+  background: var(--green-dim);
+  border: 1px solid rgba(74,222,128,0.2);
+  color: var(--green);
+}
+.status-pill.offline {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.status-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: currentColor;
+}
+.status-pill.online .status-dot { animation: pulse-dot 2s ease infinite; }
+@keyframes pulse-dot { 0%,100%{ opacity:1; } 50%{ opacity:0.3; } }
+
+/* ──────────── BIG BUTTON ──────────── */
+.hero { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 28px; }
+
+.hang-wrap {
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 28px;
+}
+
+.ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1.5px solid var(--orange);
+  opacity: 0;
+  animation: expand 3s ease-out infinite;
+}
+.ring:nth-child(1) { width: 170px; height: 170px; animation-delay: 0s; }
+.ring:nth-child(2) { width: 210px; height: 210px; animation-delay: 0.8s; }
+.ring:nth-child(3) { width: 250px; height: 250px; animation-delay: 1.6s; }
+
+@keyframes expand {
+  0%   { transform: scale(0.8); opacity: 0.5; }
+  100% { transform: scale(1.1); opacity: 0; }
+}
+
+.hang-btn {
+  position: relative; z-index: 2;
+  width: 140px; height: 140px;
+  border-radius: 50%;
+  background: var(--orange);
+  border: none; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+  transition: transform 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.hang-btn:hover { transform: scale(1.03); }
+.hang-btn:active { transform: scale(0.95); }
+.hang-btn.fired { animation: pop 0.45s cubic-bezier(.36,.07,.19,.97); }
+@keyframes pop {
+  0%   { transform: scale(1); }
+  30%  { transform: scale(1.18); }
+  60%  { transform: scale(0.95); }
+  80%  { transform: scale(1.04); }
+  100% { transform: scale(1); }
+}
+.hang-icon { font-size: 44px; line-height: 1; }
+.hang-label { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 12px; color: #fff; letter-spacing: 0.1em; text-transform: uppercase; }
+
+.hero-caption {
+  font-size: 14px; color: var(--muted); text-align: center; max-width: 240px;
+  line-height: 1.6; min-height: 40px;
+  transition: color 0.3s;
+}
+.hero-caption.success { color: var(--green); }
+.hero-caption.warn { color: #f59e0b; }
+
+/* ──────────── NOTIF PERMISSION BANNER ──────────── */
+.notif-banner {
+  margin: 0 28px;
+  background: var(--orange-dim);
+  border: 1px solid rgba(255,92,53,0.25);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex; align-items: center; gap: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.notif-banner:hover { background: rgba(255,92,53,0.2); }
+.notif-banner.hidden { display: none; }
+.notif-banner-icon { font-size: 20px; flex-shrink: 0; }
+.notif-banner-text { flex: 1; }
+.notif-banner-title { font-size: 14px; font-weight: 500; color: var(--orange); }
+.notif-banner-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.notif-banner-arrow { color: var(--orange); font-size: 16px; }
+
+/* ──────────── FEED ──────────── */
+.feed-section { padding: 8px 28px 40px; }
+.feed-header {
+  font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--muted2); margin-bottom: 12px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.feed-count {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 99px; padding: 2px 10px; font-size: 11px; color: var(--muted);
+}
+
+.feed { display: flex; flex-direction: column; gap: 8px; }
+
+.feed-item {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 13px 15px;
+  display: flex; align-items: center; gap: 12px;
+  animation: slideIn 0.3s ease;
+}
+@keyframes slideIn { from { opacity:0; transform:translateX(-6px); } to { opacity:1; transform:translateX(0); } }
+
+.avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px;
+  flex-shrink: 0;
+}
+.feed-body { flex: 1; min-width: 0; }
+.feed-name { font-size: 14px; font-weight: 500; }
+.feed-msg  { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.feed-time { font-size: 11px; color: var(--muted2); flex-shrink: 0; }
+
+.empty-feed { text-align: center; padding: 24px; font-size: 13px; color: var(--muted2); line-height: 1.7; }
+
+/* ──────────── TOAST ──────────── */
+.toast {
+  position: fixed; top: 16px; left: 50%;
+  transform: translateX(-50%) translateY(calc(-100% - 20px));
+  width: calc(100% - 32px); max-width: 400px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 16px;
+  padding: 14px 18px;
+  display: flex; align-items: center; gap: 12px;
+  z-index: 500;
+  transition: transform 0.4s cubic-bezier(.34,1.4,.64,1);
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast-icon { font-size: 24px; flex-shrink: 0; }
+.toast-body { flex: 1; }
+.toast-title { font-size: 14px; font-weight: 500; }
+.toast-sub   { font-size: 12px; color: var(--muted); margin-top: 1px; }
+
+/* ──────────── SETTINGS SCREEN ──────────── */
+#screen-settings { padding: 56px 28px 40px; gap: 0; }
+
+.back-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: none; border: none; color: var(--muted); cursor: pointer;
+  font-family: 'DM Sans', sans-serif; font-size: 14px;
+  margin-bottom: 36px; padding: 0;
+  transition: color 0.15s;
+}
+.back-btn:hover { color: var(--text); }
+
+.settings-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 28px; margin-bottom: 32px; }
+
+.settings-section { margin-bottom: 28px; }
+.settings-label { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; display: block; }
+
+.members-list { display: flex; flex-direction: column; gap: 8px; }
+.member-row {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 12px 15px;
+  display: flex; align-items: center; gap: 10px; font-size: 14px;
+}
+.member-you { font-size: 11px; color: var(--muted); margin-left: auto; }
+
+.btn-danger {
+  background: rgba(239,68,68,0.08);
+  border: 1px solid rgba(239,68,68,0.2);
+  border-radius: 14px; color: #ef4444;
+  font-family: 'DM Sans', sans-serif; font-size: 15px;
+  padding: 15px; width: 100%; cursor: pointer; margin-top: 40px;
+  transition: background 0.2s;
+}
+.btn-danger:hover { background: rgba(239,68,68,0.15); }
+
+/* ──────────── AVATAR COLORS ──────────── */
+.av-0 { background: rgba(255,92,53,0.2);  color: #ff5c35; }
+.av-1 { background: rgba(59,130,246,0.2); color: #60a5fa; }
+.av-2 { background: rgba(168,85,247,0.2); color: #c084fc; }
+.av-3 { background: rgba(236,72,153,0.2); color: #f472b6; }
+.av-4 { background: rgba(20,184,166,0.2); color: #2dd4bf; }
+.av-5 { background: rgba(245,158,11,0.2); color: #fbbf24; }
+</style>
+</head>
+<body>
+
+<!-- ══ SETUP SCREEN ══ -->
+<div class="screen active" id="screen-setup">
+  <div class="wordmark">hang<em>.</em></div>
+  <div class="tagline">one tap. everyone knows.</div>
+
+  <div class="field-group">
+    <label class="field-label">your name</label>
+    <input type="text" id="input-name" placeholder="e.g. Alex" maxlength="20" autocomplete="off">
+  </div>
+
+  <div class="field-group">
+    <label class="field-label">group name</label>
+    <input type="text" id="input-group" placeholder="e.g. The Squad" maxlength="30" autocomplete="off">
+  </div>
+
+  <div class="field-group">
+    <label class="field-label">add your friends</label>
+    <div class="friends-row">
+      <input type="text" id="input-friend" placeholder="friend's name" maxlength="20" autocomplete="off">
+      <button class="btn-icon" id="btn-add-friend">+</button>
+    </div>
+    <div class="chips-list" id="friends-chips"></div>
+  </div>
+
+  <div class="spacer"></div>
+
+  <button class="btn-primary" id="btn-start" disabled>set up hang. →</button>
+</div>
+
+<!-- ══ MAIN SCREEN ══ -->
+<div class="screen" id="screen-main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="greeting" id="greeting"></div>
+      <div class="group-name" id="group-display"></div>
+    </div>
+    <button class="btn-icon" id="btn-settings" title="settings" style="border-radius:50%;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- notification permission banner -->
+  <div style="height:16px;"></div>
+  <div class="notif-banner hidden" id="notif-banner">
+    <div class="notif-banner-icon">🔔</div>
+    <div class="notif-banner-text">
+      <div class="notif-banner-title">enable notifications</div>
+      <div class="notif-banner-sub">get notified even when app is closed</div>
+    </div>
+    <div class="notif-banner-arrow">→</div>
+  </div>
+
+  <div class="hero">
+    <div class="hang-wrap">
+      <div class="ring"></div>
+      <div class="ring"></div>
+      <div class="ring"></div>
+      <button class="hang-btn" id="hang-btn">
+        <div class="hang-icon">🤙</div>
+        <div class="hang-label">let's hang</div>
+      </button>
+    </div>
+    <div class="hero-caption" id="hero-caption">tap to alert your crew</div>
+  </div>
+
+  <div class="feed-section">
+    <div class="feed-header">
+      <span>recent alerts</span>
+      <span class="feed-count" id="feed-count">0</span>
+    </div>
+    <div class="feed" id="feed">
+      <div class="empty-feed" id="empty-feed">
+        no alerts yet<br>be the first to tap 👆
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SETTINGS SCREEN ══ -->
+<div class="screen" id="screen-settings">
+  <button class="back-btn" id="btn-back">← back</button>
+  <div class="settings-title">settings</div>
+
+  <div class="settings-section">
+    <span class="settings-label">your crew</span>
+    <div class="members-list" id="members-list"></div>
+  </div>
+
+  <div class="settings-section">
+    <span class="settings-label">notifications</span>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;font-size:14px;color:var(--muted);" id="notif-status-text">
+      checking notification status…
+    </div>
+  </div>
+
+  <div class="settings-section">
+    <span class="settings-label">share with friends</span>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;font-size:13px;color:var(--muted);word-break:break-all;cursor:pointer;" id="share-url-box">
+      loading…
+    </div>
+    <button class="btn-primary" id="btn-copy-link" style="margin-top:10px;">copy link</button>
+  </div>
+
+  <button class="btn-danger" id="btn-leave">leave group & reset</button>
+</div>
+
+<!-- ══ TOAST ══ -->
+<div class="toast" id="toast">
+  <div class="toast-icon">🤙</div>
+  <div class="toast-body">
+    <div class="toast-title" id="toast-title">Alex wants to hang!</div>
+    <div class="toast-sub" id="toast-sub">right now</div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+//  hang. — frontend logic
+// ─────────────────────────────────────────────
+
+const API = ''; // empty = same origin (relative URLs)
+
+let state = {
+  name: '', group: '', friends: [],
+  subscribed: false, log: []
+};
+
+const LS_KEY = 'hang_state_v2';
+
+function save() { try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch(e){} }
+function load() {
+  try {
+    const s = localStorage.getItem(LS_KEY);
+    if (s) { state = { ...state, ...JSON.parse(s) }; return true; }
+  } catch(e){}
+  return false;
+}
+
+// ─── Screens ───
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ─── Setup screen ───
+const inputName   = document.getElementById('input-name');
+const inputGroup  = document.getElementById('input-group');
+const inputFriend = document.getElementById('input-friend');
+const btnStart    = document.getElementById('btn-start');
+const friendsChips = document.getElementById('friends-chips');
+
+let pendingFriends = [];
+
+function validate() {
+  btnStart.disabled = !(inputName.value.trim() && inputGroup.value.trim());
+}
+
+inputName.addEventListener('input', validate);
+inputGroup.addEventListener('input', validate);
+
+document.getElementById('btn-add-friend').addEventListener('click', addFriend);
+inputFriend.addEventListener('keydown', e => { if (e.key === 'Enter') addFriend(); });
+
+function addFriend() {
+  const n = inputFriend.value.trim();
+  if (!n || pendingFriends.includes(n)) { inputFriend.value = ''; return; }
+  pendingFriends.push(n);
+  inputFriend.value = '';
+  renderChips();
+}
+
+function renderChips() {
+  friendsChips.innerHTML = pendingFriends.map((f,i) =>
+    `<div class="chip"><span>${f}</span><button onclick="removeFriend(${i})">×</button></div>`
+  ).join('');
+}
+function removeFriend(i) { pendingFriends.splice(i,1); renderChips(); }
+
+document.getElementById('btn-start').addEventListener('click', async () => {
+  state.name    = inputName.value.trim();
+  state.group   = inputGroup.value.trim();
+  state.friends = [...pendingFriends];
+  state.log     = [];
+  save();
+  show('screen-main');
+  initMain();
+  await setupPush();
+});
+
+// ─── Main screen ───
+function initMain() {
+  document.getElementById('greeting').textContent    = `hey, ${state.name.toLowerCase()} 👋`;
+  document.getElementById('group-display').textContent = state.group;
+  renderFeed();
+  checkNotifBanner();
+  renderMembersList();
+  updateShareBox();
+  fetchLog();
+}
+
+// ─── Push notifications ───
+let swReg = null;
+
+async function registerSW() {
+  if (!('serviceWorker' in navigator)) return null;
+  try {
+    swReg = await navigator.serviceWorker.register('/sw.js');
+    return swReg;
+  } catch(e) {
+    console.warn('SW failed:', e);
+    return null;
+  }
+}
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+}
+
+async function setupPush() {
+  const reg = await registerSW();
+  if (!reg) { showNotifStatus('push-unsupported'); return; }
+
+  const perm = await Notification.requestPermission();
+  if (perm !== 'granted') { showNotifStatus('denied'); return; }
+
+  try {
+    const keyRes = await fetch(`${API}/api/vapid-key`);
+    const { publicKey } = await keyRes.json();
+
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(publicKey)
+    });
+
+    await fetch(`${API}/api/subscribe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: state.name, subscription: sub.toJSON() })
+    });
+
+    state.subscribed = true;
+    save();
+    showNotifStatus('granted');
+    checkNotifBanner();
+  } catch(e) {
+    console.warn('Push setup error:', e);
+    showNotifStatus('error');
+  }
+}
+
+function showNotifStatus(status) {
+  const el = document.getElementById('notif-status-text');
+  const msgs = {
+    'granted':        '✓ notifications enabled — you\'ll get alerted even when app is closed',
+    'denied':         '✗ notifications blocked — enable in your browser/phone settings',
+    'push-unsupported':'your browser doesn\'t support push notifications. try Chrome or Safari 16.4+',
+    'error':          'something went wrong enabling push. try refreshing.',
+    'checking':       'checking notification status…'
+  };
+  if (el) el.textContent = msgs[status] || msgs['checking'];
+}
+
+function checkNotifBanner() {
+  const banner = document.getElementById('notif-banner');
+  if (!banner) return;
+  const perm = typeof Notification !== 'undefined' ? Notification.permission : 'unsupported';
+  if (perm === 'granted' || !('serviceWorker' in navigator)) {
+    banner.classList.add('hidden');
+  } else {
+    banner.classList.remove('hidden');
+  }
+}
+
+document.getElementById('notif-banner').addEventListener('click', async () => {
+  document.getElementById('notif-banner').classList.add('hidden');
+  await setupPush();
+});
+
+// ─── Hang button ───
+let lastHang = 0;
+const COOLDOWN_MS = 15000;
+
+document.getElementById('hang-btn').addEventListener('click', async () => {
+  const now = Date.now();
+  const remaining = Math.ceil((COOLDOWN_MS - (now - lastHang)) / 1000);
+  if (now - lastHang < COOLDOWN_MS) {
+    setCaption(`wait ${remaining}s before tapping again`, 'warn');
+    return;
+  }
+  lastHang = now;
+
+  document.getElementById('hang-btn').classList.add('fired');
+  setTimeout(() => document.getElementById('hang-btn').classList.remove('fired'), 500);
+
+  const messages = [
+    `${state.name} wants to hang — right now!`,
+    `${state.name} is free! who's in?`,
+    `${state.name} just put out the hang signal 🟢`,
+    `${state.name} says let's do something tonight!`,
+    `${state.name} is looking to link up!`,
+  ];
+  const msg = messages[Math.floor(Math.random() * messages.length)];
+
+  try {
+    const res = await fetch(`${API}/api/hang`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: state.name, message: msg })
+    });
+    const data = await res.json();
+    const notified = data.sent ?? 0;
+    setCaption(`🟢 alert sent to ${notified} friend${notified !== 1 ? 's' : ''}!`, 'success');
+    setTimeout(() => setCaption('tap to alert your crew', ''), 5000);
+    addToFeed({ from: state.name, msg, ts: Date.now() });
+  } catch(e) {
+    setCaption('couldn\'t reach server. are you online?', 'warn');
+    setTimeout(() => setCaption('tap to alert your crew', ''), 4000);
+  }
+});
+
+function setCaption(text, cls) {
+  const el = document.getElementById('hero-caption');
+  el.textContent = text;
+  el.className = 'hero-caption' + (cls ? ' ' + cls : '');
+}
+
+// ─── Feed ───
+const COLORS = ['av-0','av-1','av-2','av-3','av-4','av-5'];
+const colorMap = {};
+let colorIdx = 0;
+function getColor(name) {
+  if (!colorMap[name]) colorMap[name] = COLORS[(colorIdx++) % COLORS.length];
+  return colorMap[name];
+}
+
+function addToFeed(item) {
+  state.log.unshift(item);
+  if (state.log.length > 40) state.log.length = 40;
+  save();
+  renderFeed();
+}
+
+function renderFeed() {
+  const feed = document.getElementById('feed');
+  const empty = document.getElementById('empty-feed');
+  document.getElementById('feed-count').textContent = state.log.length;
+
+  if (state.log.length === 0) {
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  feed.innerHTML = state.log.map(item => {
+    const initials = item.from.slice(0,2).toUpperCase();
+    const cls = getColor(item.from);
+    return `<div class="feed-item">
+      <div class="avatar ${cls}">${initials}</div>
+      <div class="feed-body">
+        <div class="feed-name">${escHtml(item.from)}</div>
+        <div class="feed-msg">${escHtml(item.msg)}</div>
+      </div>
+      <div class="feed-time">${timeAgo(item.ts)}</div>
+    </div>`;
+  }).join('');
+}
+
+function timeAgo(ts) {
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 10) return 'now';
+  if (s < 60) return `${s}s`;
+  if (s < 3600) return `${Math.floor(s/60)}m`;
+  if (s < 86400) return `${Math.floor(s/3600)}h`;
+  return `${Math.floor(s/86400)}d`;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function fetchLog() {
+  try {
+    const res = await fetch(`${API}/api/log`);
+    const { log } = await res.json();
+    if (log && log.length > 0) {
+      // merge server log with local
+      const local = new Set(state.log.map(i => `${i.from}_${i.ts}`));
+      const fresh = log.filter(i => !local.has(`${i.from}_${i.ts}`));
+      state.log = [...state.log, ...fresh].sort((a,b) => b.ts - a.ts).slice(0,40);
+      save();
+      renderFeed();
+    }
+  } catch(e) {}
+}
+
+// ─── Settings ───
+document.getElementById('btn-settings').addEventListener('click', () => {
+  renderMembersList();
+  updateShareBox();
+  const perm = typeof Notification !== 'undefined' ? Notification.permission : 'unsupported';
+  showNotifStatus(perm === 'granted' ? 'granted' : perm === 'denied' ? 'denied' : 'checking');
+  show('screen-settings');
+});
+
+document.getElementById('btn-back').addEventListener('click', () => show('screen-main'));
+
+function renderMembersList() {
+  const el = document.getElementById('members-list');
+  const all = [state.name, ...state.friends];
+  el.innerHTML = all.map((f,i) => {
+    const cls = getColor(f);
+    const initials = f.slice(0,2).toUpperCase();
+    return `<div class="member-row">
+      <div class="avatar ${cls}" style="width:32px;height:32px;font-size:11px;">${initials}</div>
+      <span>${escHtml(f)}</span>
+      ${i === 0 ? '<span class="member-you">you</span>' : ''}
+    </div>`;
+  }).join('');
+}
+
+function updateShareBox() {
+  const box = document.getElementById('share-url-box');
+  if (box) box.textContent = window.location.origin;
+}
+
+document.getElementById('btn-copy-link').addEventListener('click', () => {
+  navigator.clipboard.writeText(window.location.origin).then(() => {
+    const btn = document.getElementById('btn-copy-link');
+    btn.textContent = '✓ copied!';
+    setTimeout(() => btn.textContent = 'copy link', 2000);
+  });
+});
+
+document.getElementById('btn-leave').addEventListener('click', () => {
+  if (!confirm('Leave the group and reset everything?')) return;
+  try {
+    fetch(`${API}/api/unsubscribe`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name: state.name }) });
+  } catch(e) {}
+  localStorage.removeItem(LS_KEY);
+  location.reload();
+});
+
+// ─── In-app toast (for service worker messages) ───
+function showToast(title, sub) {
+  const toast = document.getElementById('toast');
+  document.getElementById('toast-title').textContent = title;
+  document.getElementById('toast-sub').textContent   = sub || 'right now';
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 4500);
+}
+
+// Listen for messages from service worker (notification clicks)
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', e => {
+    if (e.data?.type === 'notification-click') {
+      show('screen-main');
+      fetchLog();
+    }
+  });
+}
+
+// ─── Poll for new hang alerts every 30s (as backup) ───
+setInterval(fetchLog, 30000);
+setInterval(renderFeed, 20000); // refresh time-agos
+
+// ─── Init ───
+(function init() {
+  if (load() && state.name) {
+    show('screen-main');
+    registerSW().then(() => {
+      checkNotifBanner();
+      if (Notification.permission === 'granted') showNotifStatus('granted');
+    });
+    initMain();
+  }
+})();
+</script>
+</body>
+</html>
